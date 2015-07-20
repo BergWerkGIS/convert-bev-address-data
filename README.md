@@ -12,3 +12,9 @@ This tool (Windows only) strips all attributes and creates a CSV with [EPSG:3128
 * `convert-bev-address-data <FULL-PATH-TO-ADRESSE.csv>`
 
 * Needs `ADRESSE.csv` and `STRASSE.CSV` in the same directory.
+
+![bev-addresses-austria](img/bev-addresses-austria.png)
+
+![bev-addresses-austria](img/bev-addresses-austria3.png)
+
+![bev-addresses-austria](img/bev-addresses-austria2.png)
