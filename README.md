@@ -1,5 +1,5 @@
 
-Looking for the same thing, but with Python?
+Looking for the same thing, but in Python?
 Look no further: https://github.com/scubbx/convert-bev-address-data-python
 
 ------
@@ -47,4 +47,4 @@ options:
 
 ## Source
 
-Visual Studio 2015 is need to compile the source
+Visual Studio 2015 is needed to compile the source
