@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using ProjApi;
 using Mono.Options;
-
+using FileHelpers;
 
 namespace convert_bev_address_data {
 
@@ -87,6 +87,7 @@ But it makes sense to have 6 decimal places with EPSG:4326.";
 
 			char[] delimiter = ";".ToCharArray();
 			CultureInfo enUS = new CultureInfo( "en-US" );
+			enUS.NumberFormat.NumberGroupSeparator = string.Empty;
 			string decimalPlacesTxt = string.Format( "N{0}", decimalPlaces );
 
 			Console.WriteLine( "reading street names" );
@@ -143,89 +144,59 @@ But it makes sense to have 6 decimal places with EPSG:4326.";
 
 			Console.WriteLine( "reading addresses" );
 
-			using (TextReader tr = new StreamReader( csvAddress )) {
+			var fileHelper = new FileHelperAsyncEngine<BevAddress>();
+			long skipCnt = 0;
 
-				//skip header
-				tr.ReadLine();
-
-				string line;
-				Int64 lineCnter = 1;
+			using (fileHelper.BeginReadFile( csvAddress )) {
 
 				using (TextWriter tw = new StreamWriter( csvOut, false, Encoding.UTF8 )) {
 
 					tw.WriteLine( "gemeinde;plz;ort;strasse;hnr;x-{0};y-{0}", targetEpsg );
-					while (!string.IsNullOrWhiteSpace( line = tr.ReadLine() )) {
+					long lineCnter = 1; //start with 1 (skipped header)
+					foreach (var record in fileHelper) {
 
 						lineCnter++;
+
+						if (!record.RW.HasValue || !record.HW.HasValue) {
+							skipCnt++;
+							Console.WriteLine( "no coordinates: {0}", recordToString( record, streets ) );
+							continue;
+						}
+
+						double[] x = new double[] { record.RW.Value };
+						double[] y = new double[] { record.HW.Value };
+
 						try {
-							string[] tokens = line.Split( delimiter );
-
-							string adrcd = tokens[1].Replace( "\"", string.Empty );
-							string gkz = tokens[1].Replace( "\"", string.Empty );
-							string okz = tokens[2].Replace( "\"", string.Empty );
-							string plz = tokens[3].Replace( "\"", string.Empty );
-							string skz = tokens[4].Replace( "\"", string.Empty );
-							string hnrtxt = tokens[6].Replace( "\"", string.Empty );
-							string hnrzahl1 = tokens[7].Replace( "\"", string.Empty );
-							string hnrchar1 = tokens[8].Replace( "\"", string.Empty );
-							string hnrverb = tokens[9].Replace( "\"", string.Empty );
-							string hnrzahl2 = tokens[10].Replace( "\"", string.Empty );
-							string hnrchar2 = tokens[11].Replace( "\"", string.Empty );
-							string epsg = tokens[17].Replace( "\"", string.Empty );
-							string xTxt = tokens[15].Replace( "\"", string.Empty );
-							string yTxt = tokens[16].Replace( "\"", string.Empty );
-
-							if (string.IsNullOrWhiteSpace( xTxt ) || string.IsNullOrWhiteSpace( yTxt )) {
-								Console.WriteLine( "skipped, no coordinates, adrcd:{0} gkz:{1} okz:{2} plz:{3} {4}", adrcd, gkz, okz, plz, streets.ContainsKey( skz ) ? streets[skz] : string.Empty );
-								continue;
-							}
-
-							double[] x = new double[] { Convert.ToDouble( xTxt, enUS ) };
-							double[] y = new double[] { Convert.ToDouble( yTxt, enUS ) };
-
-							try {
-								srcProjs[epsg].Transform( prjTarget, x, y );
-							}
-							catch (Exception ex2) {
-								Console.WriteLine( "{1}======ERROR: prj transform failed! line {0}:", lineCnter, Environment.NewLine );
-								Console.WriteLine( line );
-								Console.WriteLine( ex2 );
-								Console.WriteLine( Environment.NewLine );
-								continue;
-							}
-
-							string outline = string.Format(
-								enUS
-								, "{0};{1};{2};{3};{4}{5}{6}{7}{8}{9};{10};{11}"
-								, gemeinden.ContainsKey( gkz ) ? gemeinden[gkz] : string.Empty
-								, plz
-								, orte.ContainsKey( okz ) ? orte[okz] : string.Empty
-								, streets.ContainsKey( skz ) ? streets[skz] : string.Empty
-								, !string.IsNullOrEmpty( hnrtxt ) ? " " + hnrtxt : string.Empty
-								, !string.IsNullOrEmpty( hnrzahl1 ) ? " " + hnrzahl1 : string.Empty
-								, !string.IsNullOrEmpty( hnrchar1 ) ? " " + hnrchar1 : string.Empty
-								, !string.IsNullOrEmpty( hnrverb ) ? " " + hnrverb : string.Empty
-								, !string.IsNullOrEmpty( hnrzahl2 ) ? " " + hnrzahl2 : string.Empty
-								, !string.IsNullOrEmpty( hnrchar2 ) ? " " + hnrchar2 : string.Empty
-								, x[0].ToString( decimalPlacesTxt, enUS )
-								, y[0].ToString( decimalPlacesTxt, enUS )
-							);
-							tw.WriteLine( outline );
+							srcProjs[record.EPSG].Transform( prjTarget, x, y );
 						}
-						catch (Exception ex) {
-							Console.WriteLine( "{1}======ERROR! line {0}:", lineCnter, Environment.NewLine );
-							Console.WriteLine( line );
-							Console.WriteLine( ex );
+						catch (Exception ex2) {
+							Console.WriteLine( "{1}======ERROR: prj transform failed! line {0}:", lineCnter, Environment.NewLine );
+							Console.WriteLine( recordToString( record, streets ) );
+							Console.WriteLine( ex2 );
 							Console.WriteLine( Environment.NewLine );
+							continue;
 						}
+
+						string outline = string.Format(
+							enUS
+							, "{0};{1};{2};{3};{4};{5};{6}"
+							, gemeinden.ContainsKey( record.GKZ ) ? gemeinden[record.GKZ] : string.Empty
+							, record.PLZ
+							, orte.ContainsKey( record.OKZ ) ? orte[record.OKZ] : string.Empty
+							, streets.ContainsKey( record.SKZ ) ? streets[record.SKZ] : string.Empty
+							, constructHouseNumber( record )
+							, x[0].ToString( decimalPlacesTxt, enUS )
+							, y[0].ToString( decimalPlacesTxt, enUS )
+						);
+
+						tw.WriteLine( outline );
 					}
 				}
 			}
 
-
 			//clean up
-			Console.WriteLine( srcProjs["31254"].Definition );
-            prjTarget.Dispose();
+			Console.WriteLine( "skipped: {0}{1}{0}", Environment.NewLine, skipCnt );
+			prjTarget.Dispose();
 			prjTarget = null;
 			srcProjs["31254"].Dispose();
 			srcProjs["31254"] = null;
@@ -234,6 +205,32 @@ But it makes sense to have 6 decimal places with EPSG:4326.";
 			srcProjs["31256"].Dispose();
 			srcProjs["31256"] = null;
 
+		}
+
+
+		private static string constructHouseNumber( BevAddress record ) {
+
+			List<string> hnr = new List<string>();
+			if (!string.IsNullOrEmpty( record.HAUSNRTEXT )) { hnr.Add( record.HAUSNRTEXT ); }
+			if (record.HAUSNRZAHL1.HasValue) { hnr.Add( record.HAUSNRZAHL1.ToString() ); }
+			if (!string.IsNullOrEmpty( record.HAUSNRBUCHSTABE1 )) { hnr.Add( record.HAUSNRBUCHSTABE1 ); }
+			if (!string.IsNullOrEmpty( record.HAUSNRVERBINDUNG1 )) { hnr.Add( record.HAUSNRVERBINDUNG1 ); }
+			if (record.HAUSNRZAHL2.HasValue) { hnr.Add( record.HAUSNRZAHL2.ToString() ); }
+			if (!string.IsNullOrEmpty( record.HAUSNRBUCHSTABE2 )) { hnr.Add( record.HAUSNRBUCHSTABE2 ); }
+
+			return string.Join( " ", hnr.ToArray() );
+		}
+
+
+		private static string recordToString( BevAddress record, Dictionary<string, string> streets ) {
+			return string.Format(
+				"adrcd:{0} gkz:{1} okz:{2} plz:{3} {4}"
+				, record.ADRCD
+				, record.GKZ
+				, record.OKZ
+				, record.PLZ
+				, streets.ContainsKey( record.SKZ ) ? streets[record.SKZ] : string.Empty
+			);
 		}
 
 
