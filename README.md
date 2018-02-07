@@ -20,6 +20,20 @@ This tool (Windows only) strips all attributes and creates a CSV with [EPSG:3128
 
 Binaries: https://github.com/BergWerkGIS/convert-bev-address-data/releases
 
+## Known Issues
+
+If there's an error message like
+
+```
+could not initialize EPSG:31287
+No such file or directory
+```
+
+set the environment variable `PROJ_LIB` before calling `convert-bev-address-data.exe` to the full **directory** path where the file `espg` is located:
+
+```
+SET PROJ_LIB=C:\FULL\PATH\TO\EPSG\FILE\DIRECTORY
+```
 
 ## Usage
 
