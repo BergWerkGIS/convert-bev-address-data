@@ -56,6 +56,10 @@ public sealed class BevAddress {
 	public String HAUSNRBEREICH;
 
 	[FieldTrim( TrimMode.Both )]
+	[FieldQuoted( '"', QuoteMode.OptionalForRead, MultilineMode.AllowForRead )]
+	public String HNR_ADR_ZUSAMMEN;
+
+	[FieldTrim( TrimMode.Both )]
 	public Int32 GNRADRESSE;
 
 	[FieldTrim( TrimMode.Both )]

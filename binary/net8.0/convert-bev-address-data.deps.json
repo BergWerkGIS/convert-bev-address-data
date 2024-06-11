@@ -1,0 +1,41 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "convert-bev-address-data/1.0.0": {
+        "dependencies": {
+          "FileHelpers": "3.5.2"
+        },
+        "runtime": {
+          "convert-bev-address-data.dll": {}
+        }
+      },
+      "FileHelpers/3.5.2": {
+        "runtime": {
+          "lib/netstandard2.0/FileHelpers.dll": {
+            "assemblyVersion": "3.5.2.0",
+            "fileVersion": "3.5.2.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "convert-bev-address-data/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "FileHelpers/3.5.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Z0jwjF4AmDBzRWfHFMdrcuBgmoQ2ChLaTmhRjnmReoUPUkT/+5StzWCB0N0RpslYeXiSyvcntcZNLtY58todFw==",
+      "path": "filehelpers/3.5.2",
+      "hashPath": "filehelpers.3.5.2.nupkg.sha512"
+    }
+  }
+}

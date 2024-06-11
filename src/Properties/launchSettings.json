@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "convert-bev-address-data-netcore": {
+      "commandName": "Project",
+      "commandLineArgs": "-i C:\\Users\\bergw\\Downloads\\GIS\\data.bev.gv.at\\Adresse_Relationale_Tabellen_Stichtagsdaten -o C:\\Users\\bergw\\Downloads\\GIS\\data.bev.gv.at\\Adresse_Relationale_Tabellen_Stichtagsdaten\\output\\addresses.csv"
+    }
+  }
+}
